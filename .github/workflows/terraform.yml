@@ -21,6 +21,8 @@ concurrency:
 
 env:
   TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+  TF_VAR_wg_server_private_key: ${{ secrets.WG_SERVER_PRIVATE_KEY }}
+  TF_VAR_wg_home_public_key: ${{ vars.WG_HOME_PUBLIC_KEY }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -30,6 +32,8 @@ jobs:
     # No credentials needed here, so blank them for this job.
     env:
       TF_VAR_hcloud_token: ""
+      TF_VAR_wg_server_private_key: ""
+      TF_VAR_wg_home_public_key: ""
       AWS_ACCESS_KEY_ID: ""
       AWS_SECRET_ACCESS_KEY: ""
     steps:

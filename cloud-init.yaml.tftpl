@@ -1,0 +1,58 @@
+#cloud-config
+# Forwards public ports 80 and 443 to the home webserver over WireGuard. The
+# home machine dials out to this server, so it needs no port opened on its NAT.
+# Runs on first boot only; any change here makes Terraform replace the server.
+package_update: true
+packages:
+  - haproxy
+  - wireguard
+
+write_files:
+  - path: /etc/wireguard/wg0.conf
+    permissions: "0600"
+    defer: true
+    content: |
+      [Interface]
+      Address = ${wg_server_address}/24
+      ListenPort = ${wg_port}
+      PrivateKey = ${wg_server_private_key}
+
+      [Peer]
+      PublicKey = ${wg_home_public_key}
+      AllowedIPs = ${wg_home_address}/32
+
+  # Raw TCP forwarding: TLS and certificates stay on the home webserver.
+  - path: /etc/haproxy/haproxy.cfg
+    defer: true
+    content: |
+      global
+        log /dev/log local0
+        user haproxy
+        group haproxy
+        daemon
+
+      defaults
+        log global
+        mode tcp
+        option tcplog
+        timeout connect 5s
+        timeout client 1h
+        timeout server 1h
+
+      frontend http
+        bind :::80 v4v6
+        default_backend home_http
+
+      frontend https
+        bind :::443 v4v6
+        default_backend home_https
+
+      backend home_http
+        server home ${wg_home_address}:80
+
+      backend home_https
+        server home ${wg_home_address}:443
+
+runcmd:
+  - systemctl enable --now wg-quick@wg0
+  - systemctl restart haproxy
