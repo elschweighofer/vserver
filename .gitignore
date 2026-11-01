@@ -5,6 +5,9 @@
 *.tfstate
 *.tfstate.*
 
+# Object storage credentials for the Terraform backend
+.env
+
 # Crash log files
 crash.log
 crash.*.log
