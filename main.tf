@@ -3,7 +3,7 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "~> 1.45"
+      version = "~> 1.70"
     }
   }
 }
@@ -53,6 +53,22 @@ resource "hcloud_firewall" "firewall" {
     ]
   }
 }
+
+# Key already uploaded to the Hetzner project; only referenced here.
+data "hcloud_ssh_key" "lukas" {
+  name = "lukas@MacBookAir"
+}
+
+# Lives and dies with the server: `terraform destroy` removes both.
+# auto_delete stays false so Terraform, not Hetzner, deletes it. With true,
+# replacing the server would delete the IP the new server is about to use.
+resource "hcloud_primary_ip" "vserver" {
+  name        = "primary_ip-96739942"
+  location    = "nbg1"
+  type        = "ipv4"
+  auto_delete = false
+}
+
 resource "hcloud_server" "vserver" {
   name              = "ubuntu-2c-4gb-nbg1-1"
   server_type       = "cx23"
@@ -60,5 +76,16 @@ resource "hcloud_server" "vserver" {
   backups           = false
   delete_protection = false
   location          = "nbg1"
-  firewall_ids      = [hcloud_firewall.firewall.id,]
+  firewall_ids      = [hcloud_firewall.firewall.id, ]
+  ssh_keys          = [data.hcloud_ssh_key.lukas.id]
+
+  public_net {
+    ipv4_enabled = true
+    ipv4         = hcloud_primary_ip.vserver.id
+    ipv6_enabled = true
+  }
+}
+
+output "ipv4_address" {
+  value = hcloud_primary_ip.vserver.ip_address
 }
