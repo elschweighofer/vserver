@@ -5,9 +5,43 @@
 package_update: true
 packages:
   - haproxy
+  - nftables
   - wireguard
 
 write_files:
+  # Mirrors the Hetzner firewall. SSH is only reachable through the tunnel.
+  - path: /etc/nftables.conf
+    defer: true
+    content: |
+      flush ruleset
+
+      table inet filter {
+        chain input {
+          type filter hook input priority filter; policy drop;
+
+          ct state established,related accept
+          ct state invalid drop
+          iif "lo" accept
+
+          tcp dport { 80, 443 } accept
+          udp dport ${wg_port} accept
+          iifname "wg0" tcp dport 22 accept
+          iifname "wg0" meta l4proto { icmp, ipv6-icmp } accept
+
+          # Needed for the public network itself to keep working.
+          udp sport 67 udp dport 68 accept
+          icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert } accept
+        }
+
+        chain forward {
+          type filter hook forward priority filter; policy drop;
+        }
+
+        chain output {
+          type filter hook output priority filter; policy accept;
+        }
+      }
+
   - path: /etc/wireguard/wg0.conf
     permissions: "0600"
     defer: true
@@ -54,5 +88,6 @@ write_files:
         server home ${wg_home_address}:443
 
 runcmd:
+  - systemctl enable --now nftables
   - systemctl enable --now wg-quick@wg0
   - systemctl restart haproxy

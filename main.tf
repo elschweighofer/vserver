@@ -95,27 +95,6 @@ resource "hcloud_firewall" "firewall" {
       "::/0",
     ]
   }
-  rule {
-    description     = "PING"
-    destination_ips = []
-    direction       = "in"
-    protocol        = "icmp"
-    source_ips = [
-      "0.0.0.0/0",
-      "::/0",
-    ]
-  }
-  rule {
-    description     = "SSH"
-    destination_ips = []
-    direction       = "in"
-    port            = "22"
-    protocol        = "tcp"
-    source_ips = [
-      "0.0.0.0/0",
-      "::/0",
-    ]
-  }
 }
 
 # Key already uploaded to the Hetzner project; only referenced here.
