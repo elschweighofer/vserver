@@ -1,5 +1,24 @@
 # Tell terraform to use the provider and select a version.
 terraform {
+  # Credentials come from AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY in .env.
+  backend "s3" {
+    bucket = "tado1maqzuxtodcec"
+    key    = "vserver/terraform.tfstate"
+    region = "nbg1"
+
+    endpoints = {
+      s3 = "https://nbg1.your-objectstorage.com"
+    }
+
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_metadata_api_check     = true
+    skip_s3_checksum            = true
+
+    use_lockfile = true
+  }
+
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
