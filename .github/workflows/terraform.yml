@@ -1,0 +1,80 @@
+# main is the source of truth: every push to main is applied to Hetzner.
+# Pull requests only validate and plan, so testing never creates infra.
+#
+# Uses no external actions, including actions/checkout. Each job fetches the
+# commit with git and runs .github/scripts/terraform.sh.
+name: terraform
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Queue runs so two applies never overlap. Applies are never cancelled.
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    # No credentials needed here, so blank them for this job.
+    env:
+      TF_VAR_hcloud_token: ""
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+    steps:
+      - name: Checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git init -q .
+          git -c "http.extraheader=AUTHORIZATION: basic $auth" \
+            fetch -q --depth=1 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_SHA"
+          git checkout -q FETCH_HEAD
+      - run: bash .github/scripts/terraform.sh install
+      - run: bash .github/scripts/terraform.sh validate
+
+  plan:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git init -q .
+          git -c "http.extraheader=AUTHORIZATION: basic $auth" \
+            fetch -q --depth=1 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_SHA"
+          git checkout -q FETCH_HEAD
+      - run: bash .github/scripts/terraform.sh install
+      - run: bash .github/scripts/terraform.sh plan
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git init -q .
+          git -c "http.extraheader=AUTHORIZATION: basic $auth" \
+            fetch -q --depth=1 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_SHA"
+          git checkout -q FETCH_HEAD
+      - run: bash .github/scripts/terraform.sh install
+      - run: bash .github/scripts/terraform.sh apply
