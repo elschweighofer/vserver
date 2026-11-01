@@ -54,10 +54,9 @@ resource "hcloud_firewall" "firewall" {
   }
 }
 resource "hcloud_server" "vserver" {
-  name              = "ubuntu-8gb-nbg1-1"
-  server_type       = "cax21"
+  name              = "ubuntu-2c-4gb-nbg1-1"
+  server_type       = "cx23"
   image             = "ubuntu-24.04"
-  datacenter        = "nbg1-dc3"
   backups           = false
   delete_protection = false
   location          = "nbg1"
