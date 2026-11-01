@@ -9,7 +9,7 @@ packages:
   - wireguard
 
 write_files:
-  # Mirrors the Hetzner firewall. SSH is only reachable through the tunnel.
+  # Mirrors the Hetzner firewall. SSH is closed everywhere, including the tunnel.
   - path: /etc/nftables.conf
     defer: true
     content: |
@@ -25,7 +25,6 @@ write_files:
 
           tcp dport { 80, 443 } accept
           udp dport ${wg_port} accept
-          iifname "wg0" tcp dport 22 accept
           iifname "wg0" meta l4proto { icmp, ipv6-icmp } accept
 
           # Needed for the public network itself to keep working.
