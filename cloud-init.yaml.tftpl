@@ -7,6 +7,8 @@ packages:
   - haproxy
   - nftables
   - unattended-upgrades
+  # Flags pending reboots for unattended-upgrades, which doesn't depend on it.
+  - update-notifier-common
   - wireguard
 
 write_files:
