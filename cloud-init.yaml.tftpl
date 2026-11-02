@@ -6,9 +6,19 @@ package_update: true
 packages:
   - haproxy
   - nftables
+  - unattended-upgrades
   - wireguard
 
 write_files:
+  # Security updates run daily, and a reboot follows the next night if one is
+  # needed. Times are UTC, and 03:31 falls between the monitor's 5-minute checks.
+  - path: /etc/apt/apt.conf.d/52unattended-upgrades-local
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "03:31";
+
   # Mirrors the Hetzner firewall. SSH is closed everywhere, including the tunnel.
   - path: /etc/nftables.conf
     defer: true
