@@ -117,9 +117,9 @@ resource "hcloud_primary_ip" "vserver" {
 }
 
 resource "hcloud_server" "vserver" {
-  name              = "ubuntu-2c-4gb-nbg1-1"
+  name              = "ubuntu-2604-2c-4gb-nbg1-1"
   server_type       = "cx23"
-  image             = "ubuntu-24.04"
+  image             = "ubuntu-26.04"
   backups           = false
   delete_protection = false
   location          = "nbg1"
